@@ -5,3 +5,9 @@ __pycache__/
 .pytest_cache/
 *.log
 .DS_Store
+omnetpp/out/
+omnetpp/Makefile
+omnetpp/congestion
+omnetpp/congestion_dbg
+omnetpp/congestion.exe
+omnetpp/results/
