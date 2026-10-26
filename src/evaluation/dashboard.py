@@ -289,8 +289,12 @@ def tab_live(opts, cfg, scenario, seed, agent_seed, simulator="python"):
     b_key = c2.selectbox("Compare with (same episode)", b_choices,
                          index=b_choices.index(default_b) if default_b in b_choices else 0,
                          format_func=lambda k: "(none)" if k == "(none)" else opts[k])
-    other = "omnet" if simulator == "python" else "python"
-    both = st.checkbox(f"Also run Controller A in the {SIM_LABEL[other]} (same link, side by side)", value=False)
+    both = False
+    if omnet_available():
+        other = "omnet" if simulator == "python" else "python"
+        both = st.checkbox(f"Also run Controller A in the {SIM_LABEL[other]} (same link, side by side)", value=False)
+    else:
+        other = "python"
     run = st.button("Run episode", type="primary")
 
     runs = [(a_key, simulator)] + ([] if b_key == "(none)" else [(b_key, simulator)]) + ([(a_key, other)] if both else [])
@@ -392,13 +396,14 @@ def main():
                                 index=SCENARIOS.index("markov"),
                                 help="The last four patterns were never seen in training.")
         seed = st.number_input("Episode seed", 0, 10**6, 10_000, help="10000 = the episode used in the report figures")
-        simulator_name = st.radio("Simulator", list(SIM_LABEL.values()), index=0,
-                                  help="OMNeT++ replays the same link with real packets and ACK-based latency. "
-                                       "It must be built first (omnetpp/README.md). Random loss and latency-noise sliders "
-                                       "affect only the Python simulator.")
-        simulator = "omnet" if simulator_name == SIM_LABEL["omnet"] else "python"
-        if not omnet_available():
-            st.caption("OMNeT++ model not built yet: only the Python simulator is available.")
+        if omnet_available():
+            simulator_name = st.radio("Simulator", list(SIM_LABEL.values()), index=0,
+                                      help="OMNeT++ replays the same link with real packets and ACK-based latency. "
+                                           "It must be built first (omnetpp/README.md). Random loss and latency-noise sliders "
+                                           "affect only the Python simulator.")
+            simulator = "omnet" if simulator_name == SIM_LABEL["omnet"] else "python"
+        else:
+            simulator = "python"
         match = st.checkbox("Match report episodes (training ranges)", value=True)
         if match:
             cfg = EnvConfig()
