@@ -5,7 +5,7 @@ action, `CongestionEnv.step()` advances the simulated link, and the dashboard pl
 returned in `info` (nothing is recalculated separately).
 
 Run from the repo root:
-    pip install -r requirements-demo.txt
+    pip install -r requirements.txt
     streamlit run src/evaluation/dashboard.py
 
 Tab 1  Live run:  the episode is simulated instantly with the real environment, then replayed by a
@@ -300,7 +300,7 @@ def tab_live(opts, cfg, scenario, seed, agent_seed, simulator="python"):
     runs = [(a_key, simulator)] + ([] if b_key == "(none)" else [(b_key, simulator)]) + ([(a_key, other)] if both else [])
     if run:
         if any(sm == "omnet" for _, sm in runs) and not omnet_available():
-            st.error(f"The OMNeT++ model is not built (expected at {default_exe()}). See omnetpp/README.md.")
+            st.error(f"The OMNeT++ model is not built (expected at {default_exe()}). See README.md.")
             return
         if any(sm == "omnet" for _, sm in runs) and (cfg.rand_loss > 0):
             st.warning("Random loss is not modelled in OMNeT++; that setting only affects the Python simulator.")
@@ -399,7 +399,7 @@ def main():
         if omnet_available():
             simulator_name = st.radio("Simulator", list(SIM_LABEL.values()), index=0,
                                       help="OMNeT++ replays the same link with real packets and ACK-based latency. "
-                                           "It must be built first (omnetpp/README.md). Random loss and latency-noise sliders "
+                                           "It must be built first (README.md). Random loss and latency-noise sliders "
                                            "affect only the Python simulator.")
             simulator = "omnet" if simulator_name == SIM_LABEL["omnet"] else "python"
         else:

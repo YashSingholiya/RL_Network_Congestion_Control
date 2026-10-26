@@ -1,7 +1,7 @@
 """Parity check between the Python fluid simulator and the OMNeT++ packet-level simulator.
 
 Runs the non-learning controllers (Fixed rate, AIMD) on the SAME links in both simulators and compares the
-episode metrics and the second-by-second traces. Needs the compiled model (omnetpp/README.md).
+episode metrics and the second-by-second traces. Needs the compiled model (README.md).
 
     python scripts/omnet_parity_check.py [--episodes 3] [--patterns constant markov step]
 
@@ -31,7 +31,7 @@ def main():
     p.add_argument("--min-corr", type=float, default=0.85, help="min correlation of the per-step queue traces")
     a = p.parse_args()
     if not omnet_available():
-        raise SystemExit(f"OMNeT++ model not found at {default_exe()} (see omnetpp/README.md)")
+        raise SystemExit(f"OMNeT++ model not found at {default_exe()} (see README.md)")
 
     cfg = EnvConfig(lat_noise=0.0)                  # no artificial noise on either side
     rows = []

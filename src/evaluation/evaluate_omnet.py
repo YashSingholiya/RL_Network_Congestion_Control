@@ -1,6 +1,6 @@
 """Run the same controllers on the SAME episodes in both simulators (Python fluid model and OMNeT++ packets).
 
-Run (after building omnetpp/, see omnetpp/README.md):
+Run (after building omnetpp/, see README.md):
     python -m src.evaluation.evaluate_omnet --episodes 3 --seeds 0
 Outputs (--out, default results/omnet/):
     episodes.csv, summary.csv, traces/<pattern>_<method>_<simulator>.csv
@@ -33,7 +33,7 @@ def main():
 
     OUT = a.out
     if not omnet_available():
-        raise SystemExit(f"OMNeT++ model not found at {default_exe()}. Build it first (omnetpp/README.md) "
+        raise SystemExit(f"OMNeT++ model not found at {default_exe()}. Build it first (README.md) "
                          "or set OMNETPP_CONGESTION_EXE.")
     os.makedirs(f"{OUT}/traces", exist_ok=True)
     policies = {}

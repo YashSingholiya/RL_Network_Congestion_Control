@@ -115,7 +115,7 @@ def test_bridge_reproduces_fluid_results_end_to_end(scenario):
     env.close()
 
 
-@pytest.mark.skipif(not omnet_available(), reason="OMNeT++ model not built (see omnetpp/README.md)")
+@pytest.mark.skipif(not omnet_available(), reason="OMNeT++ model not built (see README.md)")
 def test_real_omnet_model_basic_behaviour():
     cfg = EnvConfig(lat_noise=0.0)
 

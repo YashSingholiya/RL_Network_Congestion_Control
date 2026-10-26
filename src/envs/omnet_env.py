@@ -152,7 +152,7 @@ class OmnetCongestionEnv(gym.Env):
         else:
             if not self.exe.exists():
                 raise FileNotFoundError(
-                    f"OMNeT++ model not found at {self.exe}. Build it first (see omnetpp/README.md) "
+                    f"OMNeT++ model not found at {self.exe}. Build it first (see README.md) "
                     "or set OMNETPP_CONGESTION_EXE.")
             cmd = [str(self.exe), "-u", self.ui, "-f", str(self.ini), "-c", self.config_name, "-r", "0",
                    "-n", str(self.ini.parent), f"--**.bridge.port={port}", *self.extra_args]

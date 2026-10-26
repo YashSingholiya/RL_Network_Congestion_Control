@@ -50,7 +50,7 @@ def main():
     a = p.parse_args()
 
     if not omnet_available():
-        raise SystemExit(f"OMNeT++ model not found at {default_exe()} (see omnetpp/README.md)")
+        raise SystemExit(f"OMNeT++ model not found at {default_exe()} (see README.md)")
     policies = load_policies(a.controller, [a.agent_seed])
     if not policies:
         raise SystemExit(f"could not load controller '{a.controller}' (is the model file in models/?)")
