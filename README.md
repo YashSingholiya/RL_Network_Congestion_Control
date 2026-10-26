@@ -20,7 +20,6 @@ The OMNeT++ model is an additional comparison environment; it does not replace t
 - [Training and evaluation commands](#training-and-evaluation-commands)
 - [How the RL environment works](#how-the-rl-environment-works)
 - [Repository layout](#repository-layout)
-- [Troubleshooting](#troubleshooting)
 - [Known differences and interpretation](#known-differences-and-interpretation)
 
 ## Project overview
@@ -134,7 +133,7 @@ which opp_makemake
 printf 'OMNETPP_ROOT=%s\nINET_ROOT=%s\n' "$OMNETPP_ROOT" "$INET_ROOT"
 ```
 
-The command-line environment and the graphical IDE are separate concerns. If `opp_run` works but the IDE does not launch, see [Troubleshooting](#troubleshooting).
+The command-line environment and the graphical IDE are separate concerns.
 
 ### 3. Place the repository in the WSL Linux filesystem
 
@@ -219,7 +218,7 @@ python scripts/omnet_watch.py --controller aimd --pattern markov
 python scripts/omnet_watch.py --controller aimd --pattern markov --gui
 ```
 
-The OMNeT++ window opens and waits for you to click **Run** or **Fast**. The default pacing is approximately real time (one decision per 50 ms of wall-clock time). Close the window when finished. This requires a working WSL graphical display; see [Troubleshooting](#troubleshooting) if no window appears.
+The OMNeT++ window opens and waits for you to click **Run** or **Fast**. The default pacing is approximately real time (one decision per 50 ms of wall-clock time). Close the window when finished. This requires a working WSL graphical display (WSLg).
 
 Supported controller names include `fixed`, `aimd`, `random`, `tabular_q`, `approx_q`, `dqn`, and `ppo`. Add `_robust` to select a robust trained variant when its saved model is available, for example `dqn_robust`.
 
@@ -355,21 +354,6 @@ models/                           Saved trained policies
 results/                          Existing metrics, traces, logs, and figures
 report/                            Project report source and PDF, if included in your checkout
 ```
-
-## Troubleshooting
-
-| Symptom | What to check |
-|---|---|
-| `opp_env: command not found` | You are not in the `opp_env` distribution, or the package-manager shell has not been opened. Start `wsl -d opp_env` from Windows PowerShell. |
-| `Cannot run opp_env commands in an opp_env shell` | You are already inside the project environment. Run `exit` once to return to the outer `opp_env` shell before using `opp_env` commands. |
-| `Unknown project 'omnetpp-6.4.0+inet'` | Project names are separate. Use `opp_env shell omnetpp-6.4.0 inet-4.7.0`. |
-| `opp_run` or `opp_makemake` not found | Enter the project environment with `opp_env shell omnetpp-6.4.0 inet-4.7.0`. Do not use `--install` for normal startup. |
-| `No module named gymnasium` | Activate the Python virtual environment and install `requirements.txt`. |
-| `OMNeT++ model not found at .../omnetpp/congestion` | Build the custom model in `omnetpp/`, or set `OMNETPP_CONGESTION_EXE` to its actual executable path. |
-| OMNeT++ exits before connecting / TCP bridge timeout | Ensure the Python process and OMNeT++ model run in the same WSL environment, rebuild after model changes, and inspect the log path included in the error. Check that the selected NED/INI files are present. |
-| Qtenv does not open | Check that WSLg is available and `echo "$DISPLAY"` is non-empty; from Windows PowerShell run `wsl --update`, then `wsl --shutdown`, reopen WSL, and retry. A command-line simulation may still work even if the GUI does not. |
-| Build is very slow | Keep the working repository in the WSL Linux filesystem (under `~`) rather than `/mnt/c`. |
-| Parity check fails | Read the printed metrics and tolerances. The packet-level model is not expected to match every fluid-model metric exactly; check model changes, seed/scenario matching, and the reported queue correlation. |
 
 ## Known differences and interpretation
 
