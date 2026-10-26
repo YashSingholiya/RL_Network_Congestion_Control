@@ -52,8 +52,8 @@ The following results are recorded in the repository's root README and correspon
 | AIMD | 256.2 | 0.732 | 305 | 0.1% |
 | Tabular Q | 363.1 | 0.976 | 130 | 0.0% |
 | Approx. Q (linear) | 329.4 | 0.898 | 146 | 0.0% |
-| DQN | 371.4 | 0.994 | 121 | 0.0% |
-| PPO | 375.5 | 0.988 | 115 | 0.0% |
+| DQN | 372.1 | 0.994 | 121 | 0.0% |
+| PPO | 373.1 | 0.988 | 115 | 0.0% |
 
 These are existing project results, not a claim that the OMNeT++ parity check has passed on every machine. Generalisation results are in `results/generalization_summary.csv`; Python evaluation figures are in `results/figures/`.
 
