@@ -8,7 +8,9 @@ Run from the repo root:
     pip install -r requirements-demo.txt
     streamlit run src/evaluation/dashboard.py
 
-Tab 1  Live run:  watch one controller, or two side by side on the SAME episode.
+Tab 1  Live run:  the episode is simulated instantly with the real environment, then replayed by a
+                  smooth in-browser player (play / pause / scrub / speed) - one controller, or two
+                  side by side on the SAME episode.
 Tab 2  Play it yourself:  you set the sending rate step by step against a trained agent.
 """
 import inspect
@@ -27,6 +29,7 @@ from plotly.subplots import make_subplots
 
 from src.config import ACTIONS, HOLD_IDX, SCENARIOS, HELDOUT_SCENARIOS, EnvConfig
 from src.envs.congestion_env import CongestionEnv
+from src.envs.omnet_env import OmnetCongestionEnv, omnet_available, default_exe
 from src.baselines.simple import RandomPolicy, FixedRatePolicy
 from src.baselines.aimd import AIMDPolicy
 
@@ -41,6 +44,7 @@ CONTROLLERS = {
     "tabular_q_robust": "Tabular Q (noise-robust)", "approx_q_robust": "Approx. Q (noise-robust)",
     "dqn_robust": "DQN (noise-robust)", "ppo_robust": "PPO (noise-robust)",
 }
+SIM_LABEL = {"python": "Python fluid simulator", "omnet": "OMNeT++ packet-level"}
 COLORS = {"fixed": "#1f77b4", "aimd": "#ff7f0e", "random": "#7f7f7f", "tabular_q": "#2ca02c",
           "approx_q": "#9467bd", "dqn": "#17becf", "ppo": "#d62728", "you": "#111111"}
 
@@ -87,9 +91,10 @@ def make_policy(key, seed):
 class Sim:
     """One controller (or a human, policy=None) running one episode of the real environment."""
 
-    def __init__(self, key, label, policy, cfg, scenario, seed):
-        self.key, self.label, self.policy = key, label, policy
-        self.env = CongestionEnv(cfg, scenario=scenario)
+    def __init__(self, key, label, policy, cfg, scenario, seed, simulator="python"):
+        self.key, self.label, self.policy, self.simulator = key, label, policy, simulator
+        env_cls = OmnetCongestionEnv if simulator == "omnet" else CongestionEnv
+        self.env = env_cls(cfg, scenario=scenario)
         opts = getattr(policy, "reset_options", {}) if policy is not None else {}
         self.obs, _ = self.env.reset(seed=seed, options=opts)
         self.n = cfg.episode_len
@@ -248,6 +253,7 @@ class Panel:
 def action_label(m):
     return "Hold" if m == 1 else f"{(m - 1) * 100:+.0f}%"
 
+
 # ------------------------------------------------------------------ tab 1: live run
 def player_html(sims, autoplay, start):
     """Self-contained HTML page: the recorded episode data + the JS player (no redraws by Streamlit)."""
@@ -273,7 +279,7 @@ def embed_html(html, height):
         legacy_html(html, height=height, scrolling=True)
 
 
-def tab_live(opts, cfg, scenario, seed, agent_seed):
+def tab_live(opts, cfg, scenario, seed, agent_seed, simulator="python"):
     c1, c2 = st.columns(2)
     keys = list(opts)
     default_a = next((k for k in ("ppo", "dqn", "tabular_q", "aimd") if k in opts), keys[0])
@@ -283,14 +289,22 @@ def tab_live(opts, cfg, scenario, seed, agent_seed):
     b_key = c2.selectbox("Compare with (same episode)", b_choices,
                          index=b_choices.index(default_b) if default_b in b_choices else 0,
                          format_func=lambda k: "(none)" if k == "(none)" else opts[k])
+    other = "omnet" if simulator == "python" else "python"
+    both = st.checkbox(f"Also run Controller A in the {SIM_LABEL[other]} (same link, side by side)", value=False)
     run = st.button("Run episode", type="primary")
 
-    chosen = [a_key] + ([] if b_key == "(none)" else [b_key])
+    runs = [(a_key, simulator)] + ([] if b_key == "(none)" else [(b_key, simulator)]) + ([(a_key, other)] if both else [])
     if run:
+        if any(sm == "omnet" for _, sm in runs) and not omnet_available():
+            st.error(f"The OMNeT++ model is not built (expected at {default_exe()}). See omnetpp/README.md.")
+            return
+        if any(sm == "omnet" for _, sm in runs) and (cfg.rand_loss > 0):
+            st.warning("Random loss is not modelled in OMNeT++; that setting only affects the Python simulator.")
         try:
-            sims = [Sim(k, opts[k], make_policy(k, agent_seed), cfg, scenario, seed) for k in chosen]
-        except Exception as e:                       # e.g. PyTorch / stable-baselines3 missing
-            st.error(f"Could not load controller: {e}")
+            sims = [Sim(k, f"{opts[k]} · {SIM_LABEL[sm]}" if (both or simulator == "omnet") else opts[k],
+                        make_policy(k, agent_seed), cfg, scenario, seed, simulator=sm) for k, sm in runs]
+        except Exception as e:                       # e.g. PyTorch / stable-baselines3 / OMNeT++ problems
+            st.error(f"Could not start the run: {e}")
             return
         for s in sims:                               # the whole episode takes well under a second
             while not s.done:
@@ -309,8 +323,10 @@ def tab_live(opts, cfg, scenario, seed, agent_seed):
     st.subheader("Episode summary")
     st.dataframe(pd.DataFrame([s.summary() for s in sims]).round(3), hide_index=True)
 
+
 # ------------------------------------------------------------------ tab 2: play it yourself
 def tab_game(opts, cfg, scenario, seed, agent_seed):
+    st.caption("This tab always uses the Python simulator (each click is one step).")
     st.markdown("Set the sending rate **one 50 ms step at a time**. Keep it just below the link capacity: "
                 "too high fills the buffer (latency, then loss); too low wastes capacity. "
                 "The agent faces the exact same link.")
@@ -324,7 +340,6 @@ def tab_game(opts, cfg, scenario, seed, agent_seed):
                 ai=Sim(rival, opts[rival], make_policy(rival, agent_seed), cfg, scenario, seed))
         except Exception as e:
             st.error(f"Could not load controller: {e}")
-            
             return
     g = st.session_state.get("game")
     if g is None:
@@ -377,6 +392,13 @@ def main():
                                 index=SCENARIOS.index("markov"),
                                 help="The last four patterns were never seen in training.")
         seed = st.number_input("Episode seed", 0, 10**6, 10_000, help="10000 = the episode used in the report figures")
+        simulator_name = st.radio("Simulator", list(SIM_LABEL.values()), index=0,
+                                  help="OMNeT++ replays the same link with real packets and ACK-based latency. "
+                                       "It must be built first (omnetpp/README.md). Random loss and latency-noise sliders "
+                                       "affect only the Python simulator.")
+        simulator = "omnet" if simulator_name == SIM_LABEL["omnet"] else "python"
+        if not omnet_available():
+            st.caption("OMNeT++ model not built yet: only the Python simulator is available.")
         match = st.checkbox("Match report episodes (training ranges)", value=True)
         if match:
             cfg = EnvConfig()
@@ -389,7 +411,7 @@ def main():
     opts = available_controllers(agent_seed)
     tab1, tab2 = st.tabs(["Live run", "Play it yourself"])
     with tab1:
-        tab_live(opts, cfg, scenario, int(seed), agent_seed)
+        tab_live(opts, cfg, scenario, int(seed), agent_seed, simulator)
     with tab2:
         tab_game(opts, cfg, scenario, int(seed), agent_seed)
 
